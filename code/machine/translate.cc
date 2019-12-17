@@ -192,7 +192,6 @@ Machine::Translate(int virtAddr, int* physAddr, int size, bool writing)
     unsigned int pageFrame;
     int chosen;
     static int fifo=0;
-    static int TotalNum=0;
     int min;
     unsigned int j;
     DEBUG(dbgAddr, "\tTranslate " << virtAddr << (writing ? " , write" : " , read"));
@@ -232,11 +231,13 @@ Machine::Translate(int virtAddr, int* physAddr, int size, bool writing)
 				kernel->machine->usedPhy[j]=TRUE;
 				kernel->machine->PhyPageN[j]=pageTable[vpn].ID;
 
-				pageTable[vpn].count = TotalNum; //LRU
-				TotalNum++;
+				pageTable[vpn].count = kernel->machine->LRUcount; //LRU
+				kernel->machine->LRUcount++;
 				pageTable[vpn].physicalPage=j;
 				pageTable[vpn].valid=TRUE;
-
+				pageTable[vpn].fifo_number = kernel->machine->fifocount;
+				kernel->machine->fifocount++;
+				
 				kernel->machine->tab[j]= &pageTable[vpn];
 
 
@@ -261,7 +262,15 @@ Machine::Translate(int virtAddr, int* physAddr, int size, bool writing)
 		    		}
 				}//FIFO
 				else if(kernel->machine->type==1){
-		    		chosen=fifo;
+		    		min = kernel->machine->tab[0]->fifo_number;
+		    		chosen=0;
+		    		for(int m=0;m<32;m++){
+		    			// printf("num%d count is;%d\n",m,tab[m]->fifo_number);
+						if(min > kernel->machine->tab[m]->fifo_number){
+				   			min = kernel->machine->tab[m]->fifo_number;
+				    		chosen = m;
+						}
+		    		}
 				}
 				printf("Number = %d page swap out\n",chosen);
 
@@ -280,8 +289,10 @@ Machine::Translate(int virtAddr, int* physAddr, int size, bool writing)
 				//save to main memory
 				pageTable[vpn].valid=TRUE;
 				pageTable[vpn].physicalPage=chosen;
-				pageTable[vpn].count = TotalNum;
-				TotalNum++;
+				pageTable[vpn].count = kernel->machine->LRUcount;
+				kernel->machine->LRUcount++;
+				pageTable[vpn].fifo_number = kernel->machine->fifocount;
+				kernel->machine->fifocount++;
 
 
 				//buffer2 put to main memory
@@ -291,10 +302,10 @@ Machine::Translate(int virtAddr, int* physAddr, int size, bool writing)
 				kernel->machine->PhyPageN[chosen]=pageTable[vpn].ID;
 				kernel->machine->tab[chosen]= &pageTable[vpn];
 
-				if(kernel->machine->type==1){
-		    		fifo=fifo+1;//fifo
-		    		fifo=fifo%32;//avoid overflow
-				}
+				// if(kernel->machine->type==1){
+		  //   		fifo=fifo+1;//fifo
+		  //   		fifo=fifo%32;//avoid overflow
+				// }
 				printf("Page Replacement Finished.\n");
 	    	}
 //	    	DEBUG(dbgAddr, "Invalid virtual page # " << virtAddr);
@@ -303,8 +314,9 @@ Machine::Translate(int virtAddr, int* physAddr, int size, bool writing)
 
 		}
 		else{
-			kernel->machine->tab[pageTable[vpn].physicalPage]->count = TotalNum;
-			TotalNum++;
+			// printf("ssssssssssssss\n" );
+			kernel->machine->tab[pageTable[vpn].physicalPage]->count = kernel->machine->LRUcount;
+			kernel->machine->LRUcount++;
 			entry = &pageTable[vpn];
 		}
 		
@@ -318,8 +330,8 @@ Machine::Translate(int virtAddr, int* physAddr, int size, bool writing)
         for (entry = NULL, i = 0; i < TLBSize; i++)
     	    if (tlb[i].valid && (tlb[i].virtualPage == vpn)) {
 		entry = &tlb[i];			// FOUND!
-		entry->count=TotalNum;
-		TotalNum++;
+		// entry->count=TotalNum;
+		// TotalNum++;
 		break;
 	    }
 	if (entry == NULL) {				// not found

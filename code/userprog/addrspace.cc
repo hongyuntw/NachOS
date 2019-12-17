@@ -87,6 +87,12 @@ AddrSpace::AddrSpace()
 
 AddrSpace::~AddrSpace()
 { 
+    for(int i=0;i<howmanypages;i++){
+        if(pageTable[i].valid){
+            kernel->machine->usedPhy[pageTable[i].physicalPage] =FALSE;
+            kernel->machine->usedVir[pageTable[i].virtualPage] = FALSE;
+        }
+    }
    delete pageTable;
 }
 
@@ -123,7 +129,7 @@ AddrSpace::Load(char *fileName)
 			+ UserStackSize;	// we need to increase the size
 						// to leave room for the stack
     numPages = divRoundUp(size, PageSize);
-
+    howmanypages = numPages;
 
     pageTable = new TranslationEntry[numPages];
 //	cout << "number of pages of " << fileName<< " is "<<numPages<<endl;
@@ -185,6 +191,11 @@ AddrSpace::Load(char *fileName)
 		pageTable[i].dirty=FALSE;
 		pageTable[i].readOnly=FALSE;
 		pageTable[i].ID=ID;
+        pageTable[i].fifo_number = kernel->machine->fifocount;
+        kernel->machine->fifocount++;
+        pageTable[i].count = kernel->machine->LRUcount;
+        kernel->machine->LRUcount++;        
+
 		// pageTable[i].count++;
         kernel->machine->tab[j]=&pageTable[i];
 		executable->ReadAt(&(kernel->machine->mainMemory[j*PageSize]),

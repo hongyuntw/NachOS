@@ -40,8 +40,9 @@ class TranslationEntry {
 			// page is referenced or modified.
     bool dirty;         // This bit is set by the hardware every time the
 			// page is modified.
-    int count=0;		//for LRU
+    int count;		//for LRU
 
+    int fifo_number; //for FIFO
     int ID;
 };
 

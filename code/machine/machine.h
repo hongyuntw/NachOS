@@ -146,7 +146,8 @@ class Machine {
 //    int sector_num;		 //record which sector disk is saving
     int type;			//for change algorithm
 
-    
+    int fifocount = 0; //when to in memory
+    int LRUcount = 0;
     TranslationEntry *tab[NumPhysPages];
   private:
 

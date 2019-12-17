@@ -154,7 +154,7 @@ Scheduler::Run (Thread *nextThread, bool finishing)
     ASSERT(kernel->interrupt->getLevel() == IntOff);
 
     if (finishing) {	// mark that we need to delete current thread
-         ASSERT(toBeDestroyed == NULL);
+    ASSERT(toBeDestroyed == NULL);
 	 toBeDestroyed = oldThread;
     }
     
